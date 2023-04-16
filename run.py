@@ -3,7 +3,8 @@ import sys
 import os
 
 def main():
-    cmd = ['git', 'shortlog', '-esn']
+    extra = ['--since="12 months"']  # TODO: pass as args
+    cmd = ['git', 'shortlog', '-esn'] + extra
     result = subprocess.run(cmd, capture_output=True)
     print(result.stdout.decode())
 
