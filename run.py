@@ -3,6 +3,7 @@ import re
 import xlsxwriter
 import enum
 import argparse
+from datetime import date
 
 
 class ParsedRow(enum.IntEnum):
@@ -43,29 +44,41 @@ def parse_data(data):
     return lines2
 
 
-def generate_output(parsed, email_pattern, output_name):
+def generate_output(parsed, email_pattern, commits_detail, output_name):
     group_rows = []
     workbook = xlsxwriter.Workbook(output_name)
+    bold = workbook.add_format({"bold": True})
     worksheet = workbook.add_worksheet()
-    for i, x in enumerate(parsed):
+    row_curr = 0
+    # Add header.
+    today = date.today()
+    today = today.strftime("%B %d, %Y")
+    worksheet.write_row(row=row_curr, col=0, data=[
+                        'Author', 'Email', f'Commits on {today} ({commits_detail})'], cell_format=bold)
+    row_curr += 1
+    row_data = row_curr
+    # Write data.
+    for x in parsed:
         ret = worksheet.write_row(
-            row=i, col=0, data=[x[ParsedRow.AUTHOR], x[ParsedRow.EMAIL], x[ParsedRow.COMMITS]])
+            row=row_curr, col=0, data=[x[ParsedRow.AUTHOR], x[ParsedRow.EMAIL], x[ParsedRow.COMMITS]])
+        row_curr += 1
         if ret != 0:
             raise RuntimeError(f'Failed to write XLSX row: {ret}')
         if x[ParsedRow.EMAIL].endswith(email_pattern):
-            group_rows.append(i)
+            group_rows.append(row_curr)
     # Add sum formula.
-    stats_row = len(parsed) + 1
-    worksheet.write_string(row=stats_row, col=0, string='Total:')
-    worksheet.write_formula(row=stats_row, col=2,
-                            formula=f'=SUM(C1:C{len(parsed)})')
+    row_curr += 1
+    worksheet.write_string(row=row_curr, col=0,
+                           string='Total:', cell_format=bold)
+    worksheet.write_formula(row=row_curr, col=2,
+                            formula=f'=SUM(C{row_data+1}:C{row_data+len(parsed)})')
     # Add group sum.
     if email_pattern and group_rows:
-        stats_row += 1
-        worksheet.write_string(row=stats_row, col=0,
-                               string=f'Total ({email_pattern}):')
+        row_curr += 1
+        worksheet.write_string(row=row_curr, col=0,
+                               string=f'Total ({email_pattern}):', cell_format=bold)
         group_cells = ','.join(['C' + str(x) for x in group_rows])
-        worksheet.write_formula(row=stats_row, col=2,
+        worksheet.write_formula(row=row_curr, col=2,
                                 formula=f'=SUM({group_cells})')
 
     workbook.close()
@@ -76,7 +89,7 @@ def main():
     data = extract_data(args.since)
     parsed = parse_data(data)
     generate_output(parsed, email_pattern=args.group_domain,
-                    output_name=args.output)
+                    output_name=args.output, commits_detail=args.since)
 
 
 if __name__ == '__main__':
