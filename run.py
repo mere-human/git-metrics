@@ -2,6 +2,7 @@ import subprocess
 import re
 import xlsxwriter
 import enum
+import argparse
 
 
 class ParsedRow(enum.IntEnum):
@@ -10,8 +11,20 @@ class ParsedRow(enum.IntEnum):
     EMAIL = 2
 
 
-def extract_data():
-    extra = ['--since="12 months"']  # TODO: pass as args
+def parse_args():
+    parser = argparse.ArgumentParser(description='Git metrics')
+    parser.add_argument('--output', default='result.xlsx',
+                        help='output XLSX file name (default: %(default)s)')
+    parser.add_argument('--group_domain',
+                        help='email domain that defines a group to calculate a separate sum')
+    parser.add_argument('--since', default='12 months',
+                        help='"git shortlog" argument (default: %(default)s)')
+
+    return parser.parse_args()
+
+
+def extract_data(since):
+    extra = [f'--since="{since}"']
     cmd = ['git', 'shortlog', '-esn'] + extra
     return subprocess.run(cmd, capture_output=True)
 
@@ -59,14 +72,11 @@ def generate_output(parsed, email_pattern, output_name):
 
 
 def main():
-    # Get the data
-    data = extract_data()
-    # Process the data.
+    args = parse_args()
+    data = extract_data(args.since)
     parsed = parse_data(data)
-    # Generate the output.
-    # TODO: pass as args
-    generate_output(parsed, email_pattern='gmail.com',
-                    output_name='result.xlsx')
+    generate_output(parsed, email_pattern=args.group_domain,
+                    output_name=args.output)
 
 
 if __name__ == '__main__':
