@@ -49,6 +49,9 @@ def generate_output(parsed, email_pattern, commits_detail, output_name):
     workbook = xlsxwriter.Workbook(output_name)
     bold = workbook.add_format({"bold": True})
     worksheet = workbook.add_worksheet()
+    # Set Author and Email columns width for readability.
+    worksheet.set_column(0, 0, 20)
+    worksheet.set_column(1, 1, 25)
     row_curr = 0
     # Add header.
     today = date.today()
@@ -69,14 +72,14 @@ def generate_output(parsed, email_pattern, commits_detail, output_name):
     # Add sum formula.
     row_curr += 1
     worksheet.write_string(row=row_curr, col=0,
-                           string='Total:', cell_format=bold)
+                           string='Sum all:', cell_format=bold)
     worksheet.write_formula(row=row_curr, col=2,
                             formula=f'=SUM(C{row_data+1}:C{row_data+len(parsed)})')
     # Add group sum.
     if email_pattern and group_rows:
         row_curr += 1
         worksheet.write_string(row=row_curr, col=0,
-                               string=f'Total ({email_pattern}):', cell_format=bold)
+                               string=f'Sum {email_pattern} ({len(group_rows)}):', cell_format=bold)
         group_cells = ','.join(['C' + str(x) for x in group_rows])
         worksheet.write_formula(row=row_curr, col=2,
                                 formula=f'=SUM({group_cells})')
