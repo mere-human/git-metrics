@@ -18,15 +18,20 @@ def parse_args():
                         help='output XLSX file name (default: %(default)s)')
     parser.add_argument('--group_domain',
                         help='email domain that defines a group to calculate a separate sum')
-    parser.add_argument('--since', default='12 months',
-                        help='"git shortlog" argument (default: %(default)s)')
+    parser.add_argument('--since',
+                        help='"git shortlog" argument (example: "2 weeks")')
+    parser.add_argument('--until',
+                        help='"git shortlog" argument (example: "Mar 27 2023 00:00:00")')
 
     return parser.parse_args()
 
 
-def extract_data(since):
-    extra = [f'--since="{since}"']
-    cmd = ['git', 'shortlog', '-esn'] + extra
+def extract_data(since, until):
+    cmd = ['git', 'shortlog', '-esn']
+    if since:
+        cmd += [f'--since="{since}"']
+    if until:
+        cmd += [f'--until="{until}"']
     return subprocess.run(cmd, capture_output=True)
 
 
@@ -44,7 +49,7 @@ def parse_data(data):
     return lines2
 
 
-def generate_output(parsed, email_pattern, commits_detail, output_name):
+def generate_output(parsed, email_pattern, commits_date1, commits_date2, output_name):
     group_rows = []
     workbook = xlsxwriter.Workbook(output_name)
     bold = workbook.add_format({"bold": True})
@@ -54,10 +59,11 @@ def generate_output(parsed, email_pattern, commits_detail, output_name):
     worksheet.set_column(1, 1, 25)
     row_curr = 0
     # Add header.
-    today = date.today()
-    today = today.strftime("%B %d, %Y")
+    if not commits_date1:
+        today = date.today()
+        commits_date1 = today.strftime("%B %d, %Y")
     worksheet.write_row(row=row_curr, col=0, data=[
-                        'Author', 'Email', f'Commits on {today} ({commits_detail})'], cell_format=bold)
+                        'Author', 'Email', f'Commits on {commits_date1} ({commits_date2})'], cell_format=bold)
     row_curr += 1
     row_data = row_curr
     # Write data.
@@ -89,10 +95,10 @@ def generate_output(parsed, email_pattern, commits_detail, output_name):
 
 def main():
     args = parse_args()
-    data = extract_data(args.since)
+    data = extract_data(args.since, args.until)
     parsed = parse_data(data)
     generate_output(parsed, email_pattern=args.group_domain,
-                    output_name=args.output, commits_detail=args.since)
+                    output_name=args.output, commits_date1=args.until, commits_date2=args.since)
 
 
 if __name__ == '__main__':
