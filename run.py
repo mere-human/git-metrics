@@ -16,8 +16,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Git metrics')
     parser.add_argument('--output', default='result.xlsx',
                         help='output XLSX file name (default: %(default)s)')
-    parser.add_argument('--group_domain',
-                        help='email domain that defines a group to calculate a separate sum')
+    parser.add_argument('--group_pattern',
+                        help='email regex pattern to match that defines a group to calculate a separate sum')
     parser.add_argument('--since',
                         help='"git shortlog" argument (example: "2 weeks")')
     parser.add_argument('--until',
@@ -73,7 +73,7 @@ def generate_output(parsed, email_pattern, commits_date1, commits_date2, output_
         row_curr += 1
         if ret != 0:
             raise RuntimeError(f'Failed to write XLSX row: {ret}')
-        if x[ParsedRow.EMAIL].endswith(email_pattern):
+        if re.match(email_pattern, x[ParsedRow.EMAIL]):
             group_rows.append(row_curr)
     # Add sum formula.
     row_curr += 1
@@ -85,7 +85,8 @@ def generate_output(parsed, email_pattern, commits_date1, commits_date2, output_
     if email_pattern and group_rows:
         row_curr += 1
         worksheet.write_string(row=row_curr, col=0,
-                               string=f'Sum {email_pattern} ({len(group_rows)}):', cell_format=bold)
+                               string=f'Sum group ({len(group_rows)}):', cell_format=bold)
+        worksheet.write_string(row=row_curr, col=1, string=f'{email_pattern}')
         group_cells = ','.join(['C' + str(x) for x in group_rows])
         worksheet.write_formula(row=row_curr, col=2,
                                 formula=f'=SUM({group_cells})')
@@ -97,7 +98,7 @@ def main():
     args = parse_args()
     data = extract_data(args.since, args.until)
     parsed = parse_data(data)
-    generate_output(parsed, email_pattern=args.group_domain,
+    generate_output(parsed, email_pattern=args.group_pattern,
                     output_name=args.output, commits_date1=args.until, commits_date2=args.since)
 
 
