@@ -46,34 +46,6 @@ def parse_args():
 
     return parser.parse_args()
 
-# https://git-scm.com/docs/git-shortlog
-def run_shortlog(since, until, author, globs):
-    #-n,--numbered  Sort output according to the number of commits per author instead of author alphabetic order.
-    # -s,--summary  Suppress commit description and provide a commit count summary only.
-    # -e,--email  Show the email address of each author.
-    cmd = ['git', 'shortlog', '-esn', '--no-merges']
-    if since:
-        cmd += [f'--since="{since}"']
-    if until:
-        cmd += [f'--until="{until}"']
-    if author:
-        cmd += [f'--author={author}']
-    for g in globs:
-        cmd += [f'--glob={g}']
-    return subprocess.run(cmd, capture_output=True)
-
-def parse_shortlog(data):
-    strdata = data.stdout.decode()
-    lines1 = strdata.split('\n')
-    lines2 = []
-    for l in lines1:
-        # Example:
-        # 99 John Doe <john.doe@example.com>
-        m = re.search(r'^\s*(\d+)\s+(.+)\s+<(\S+)>$', l)
-        if m:
-            lines2.append(SummaryEntry(int(m.group(1)), m.group(2), m.group(3)))
-    return lines2
-
 # https://git-scm.com/docs/git-log
 # https://git-scm.com/docs/pretty-formats
 def run_log(since, until, author, globs):
@@ -110,6 +82,7 @@ def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry
     if not line.strip():
         return None
 
+    logging.debug(f'parse_entry:{line}'[:MAX_LOG_LEN])
     m = re.search(r'^Hash:(\S+)\s+Email:(\S+)\s+Name:(.+)\s+Subj:(.+)\s+Body:', line)
     if not m:
         raise RuntimeError(f'Could not parse at line {line_num}: {line}')
@@ -260,12 +233,8 @@ def main():
     if args.test:
         return unittest.main(argv=[sys.argv[0]], module='test_run')
 
-    if 0: # legacy
-        data = run_shortlog(args.since, args.until, args.author, args.glob)
-        parsed = parse_shortlog(data)
-    else:
-        data = run_log(args.since, args.until, args.author, args.glob)
-        parsed = parse_log(data, args.exclude_author)
+    data = run_log(args.since, args.until, args.author, args.glob)
+    parsed = parse_log(data, args.exclude_author)
     generate_output(parsed, args, email_pattern=args.group_pattern,
                     output_name=args.output, since=args.since, until=args.until)
 
