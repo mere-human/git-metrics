@@ -122,14 +122,14 @@ def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry
         entry.cherry_pick = True
 
     # extract change-id trailer
-    m = re.search(r'Change-Id:\s*(\S+)', line)
-    if m:
-        entry.change_id = m.group(1)
-        if 'Change-Id' in line[m.end():]:
-            raise RuntimeError('Multiple Change-Id is unexpected')
+    results = re.findall(r'Change-Id:\s*(\S+)', line)
+    if results:
+        if len(results) > 1:
+            logging.warning('Multiple Change-Id is unexpected. Using the last occurence.')
+        entry.change_id = results[-1]
     else:
         entry.change_id = entry.hash  # use a fallback
-        logging.warning(f'No change id at line {line_num}: {line}')
+        logging.warning(f'No change id at line {line_num}: {line[:MAX_LOG_LEN]}')
 
     return entry
 

@@ -131,8 +131,10 @@ Change-Id: i003
 Change-Id: i004
 <end-of-commit-message>
 """
-        with self.assertRaises(RuntimeError):
+        with self.assertLogs(level=logging.WARNING) as l:
             parse_log(log)
+            self.assertEqual(len(l.output), 1)
+            self.assertIn('Multiple Change-Id', l.output[0])
 
     def test_invlid_input(self):
         log ="""hello"""
