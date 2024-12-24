@@ -27,3 +27,7 @@ Add arguments such as `--glob="*Features*" --glob=master`.
 ## TODO
 
 * Output auto-naming.
+* Merge periods.
+* Easier to run by default:
+  * Detect periods automatically
+  * Sane default arguments.
