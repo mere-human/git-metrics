@@ -24,10 +24,15 @@ Warning: If there are a lot of branches, the process will take some time.
 2. Specify a pattern for branches.
 Add arguments such as `--glob="*Features*" --glob=master`.
 
+## Merging periods
+
+`run.py` provides info on a single specified period. If you want to create a table consisting of multiple periods, you can use the `merge.py` script.
+Just specify a list of XLSX files (or a directory with files) and it will produce a table where columns correspond to data from each file.
+For more, see `merge.py --help` or its sources.
+
 ## TODO
 
 * Output auto-naming.
-* Merge periods.
 * Easier to run by default:
   * Detect periods automatically
   * Sane default arguments.
