@@ -154,8 +154,8 @@ def parse_log(data, filter_author=None):
             data_by_author[entry.mail] = {entry.subj: entry}
     
 
-    logging.info(f'Total entries: {len(entries)}')
-    logging.info(f'Unique entries: {len(data_by_id)}')
+    logging.info(f'Total commits: {len(entries)}')
+    logging.info(f'Commits by change-ID: {len(data_by_id)}')
     logging.info(f'Authors: {len(data_by_author)}')
     for x in entries:
         logging.debug(x)
@@ -189,6 +189,8 @@ def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, unt
                         'Author', 'Email', f'Commits {date_part}'], cell_format=bold)
     row_curr += 1
     row_data = row_curr
+    sum_group = 0
+    sum_all = 0
     # Write data.
     for x in parsed:
         ret = worksheet.write_row(
@@ -198,12 +200,15 @@ def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, unt
             raise RuntimeError(f'Failed to write XLSX row: {ret}')
         if email_pattern and re.match(email_pattern, x.author_email):
             group_rows.append(row_curr)
+            sum_group += x.commit_sum
+        sum_all += x.commit_sum
     # Add sum formula.
     row_curr += 1
     worksheet.write_string(row=row_curr, col=0,
                            string='Sum all:', cell_format=bold)
     worksheet.write_formula(row=row_curr, col=2,
                             formula=f'=SUM(C{row_data+1}:C{row_data+len(parsed)})')
+    logging.info(f'Sum all: {sum_all}')
     # Add group sum.
     if email_pattern and group_rows:
         row_curr += 1
@@ -213,6 +218,7 @@ def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, unt
         group_cells = ','.join(['C' + str(x) for x in group_rows])
         worksheet.write_formula(row=row_curr, col=2,
                                 formula=f'=SUM({group_cells})')
+        logging.info(f'Sum group: {sum_group}')
 
     # Footer info.
     row_curr += 2
