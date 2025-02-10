@@ -166,6 +166,45 @@ Tested-by: Build Verifier <build@example.com>
         with self.assertNoLogs(level=logging.WARNING):
             parse_log(log)
 
+    def test_same_author_diff_email(self):
+        log = """Hash:123 Email:john.doe@example.com Name:John Doe  Subj:Fix 1 Body:The change
+Change-Id: i001
+<end-of-commit-message>
+Hash:456 Email:john.doe@gmail.com Name:John Doe  Subj:Fix 2 Body:The change
+Change-Id: i002
+<end-of-commit-message>
+Hash:789 Email:drwho@example.com Name:Dr Who  Subj:Fix 3 Body:The change
+Change-Id: i003
+<end-of-commit-message>
+"""
+        self.assertEqual(
+            parse_log(log),
+            [
+                SummaryEntry(1, "Dr Who", "drwho@example.com"),
+                SummaryEntry(1, "John Doe", "john.doe@example.com"),
+                SummaryEntry(1, "John Doe", "john.doe@gmail.com"),
+            ],
+        )
+
+    def test_same_author_diff_email_merge_name(self):
+        log = """Hash:123 Email:john.doe@example.com Name:John Doe  Subj:Fix 1 Body:The change
+Change-Id: i001
+<end-of-commit-message>
+Hash:456 Email:john.doe@gmail.com Name:John Doe  Subj:Fix 2 Body:The change
+Change-Id: i002
+<end-of-commit-message>
+Hash:789 Email:drwho@example.com Name:Dr Who  Subj:Fix 3 Body:The change
+Change-Id: i003
+<end-of-commit-message>
+"""
+        self.assertEqual(
+            parse_log(log, merge_by_email=False),
+            [
+                SummaryEntry(1, "Dr Who", "drwho@example.com"),
+                SummaryEntry(2, "John Doe", "john.doe@example.com;john.doe@gmail.com"),
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]], module="test_run")

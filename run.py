@@ -107,7 +107,7 @@ def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry
     return entry
 
 
-def parse_log(data, filter_author=None):
+def parse_log(data, filter_author=None, merge_by_email=True):
     if filter_author:
         filter_author = filter_author.lower()
     strdata = data if type(data) is str else data.stdout.decode()
@@ -116,6 +116,7 @@ def parse_log(data, filter_author=None):
     entries = []
     data_by_id = {}
     data_by_author = {}
+    author_emails = {}
 
     # Example: Hash:41bceac95b7 Email:john.doe@example.com Name:John Doe Subj:test Body:x
     # Subj: could be either on the same line or as a new line
@@ -139,8 +140,19 @@ def parse_log(data, filter_author=None):
         else:
             data_by_id[entry.change_id] = entry
 
+        # check author
+        author = entry.mail if merge_by_email else entry.name
+        if not merge_by_email:
+            emails = author_emails.get(author)
+            if emails:
+                if len(emails) > 1:
+                    logging.warning(f'Same author has different emails: {author}')
+                emails.add(entry.mail)
+            else:
+                author_emails[author] = {entry.mail}
+
         # check that subject is correct
-        data_by_subj = data_by_author.get(entry.mail)
+        data_by_subj = data_by_author.get(author)
         if data_by_subj:
             existing = data_by_subj.get(entry.subj)
             if existing:
@@ -151,8 +163,7 @@ def parse_log(data, filter_author=None):
             else:
                 data_by_subj[entry.subj] = entry
         else:
-            data_by_author[entry.mail] = {entry.subj: entry}
-    
+            data_by_author[author] = {entry.subj: entry}
 
     logging.info(f'Total commits: {len(entries)}')
     logging.info(f'Commits by change-ID: {len(data_by_id)}')
@@ -162,16 +173,27 @@ def parse_log(data, filter_author=None):
 
     # generate summary with number of commits
     summaries = []
-    for mail in data_by_author:
-        data_by_subj = data_by_author[mail]
+    for author in data_by_author:
+        data_by_subj = data_by_author[author]
         if data_by_subj:
-            name = next(iter(data_by_subj.values())).name # pick any entry
-            summaries.append(SummaryEntry(len(data_by_subj), name, mail))
+            data = next(iter(data_by_subj.values())) # pick any entry
+            if merge_by_email:
+                mail_data = author
+            else:
+                mail_data = ';'.join(sorted(author_emails[author]))
+            summaries.append(
+                SummaryEntry(
+                    commit_sum=len(data_by_subj),
+                    author_email=mail_data,
+                    author_name=data.name if merge_by_email else author,
+                )
+            )
 
     # TODO: move this to generate_output and add corresponding tests
     summaries.sort(key=lambda x: x.author_name)
 
     return summaries
+
 
 def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, until, output_name):
     group_rows = []
@@ -243,7 +265,7 @@ def main():
         return unittest.main(argv=[sys.argv[0]], module='test_run')
 
     data = run_log(args.since, args.until, args.author, args.glob)
-    parsed = parse_log(data, args.exclude_author)
+    parsed = parse_log(data, args.exclude_author, merge_by_email=False)
     generate_output(parsed, args, email_pattern=args.group_pattern,
                     output_name=args.output, since=args.since, until=args.until)
 
