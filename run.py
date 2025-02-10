@@ -168,6 +168,9 @@ def parse_log(data, filter_author=None):
             name = next(iter(data_by_subj.values())).name # pick any entry
             summaries.append(SummaryEntry(len(data_by_subj), name, mail))
 
+    # TODO: move this to generate_output and add corresponding tests
+    summaries.sort(key=lambda x: x.author_name)
+
     return summaries
 
 def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, until, output_name):
