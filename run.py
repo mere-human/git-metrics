@@ -14,6 +14,8 @@ logging.basicConfig(level=logging.INFO)
 
 MAX_LOG_LEN = 190
 
+STRICT_CHECKS = False
+
 class SummaryEntry:
     def __init__(self, commit_sum: int, author_name: str, author_email: str):
         self.commit_sum = commit_sum
@@ -130,13 +132,13 @@ def parse_log(data, filter_author=None, merge_by_email=True):
         existing = data_by_id.get(entry.change_id)
         if existing:
             if existing.mail != entry.mail or existing.subj != entry.subj:
-                if existing.subj in entry.subj or entry.subj in existing.subj:
+                if (existing.subj in entry.subj or entry.subj in existing.subj) or not STRICT_CHECKS:
                     # if one subject is a subset of another, it's not critical (e.g. cherry-pick)
                     logging.warning(f'Commits with the same ID differ (keeping 1st)')
                     logging.warning(f'1. {existing}'[:MAX_LOG_LEN])
                     logging.warning(f'2. {entry}'[:MAX_LOG_LEN])
                 else:
-                    raise RuntimeError('Commits with the same ID differ:', existing, '!=', entry)
+                    raise RuntimeError(f'Commits with the same ID differ: {existing} != {entry}')
         else:
             data_by_id[entry.change_id] = entry
 
@@ -146,7 +148,7 @@ def parse_log(data, filter_author=None, merge_by_email=True):
             emails = author_emails.get(author)
             if emails:
                 if len(emails) > 1:
-                    logging.warning(f'Same author has different emails: {author}')
+                    logging.warning(f'Same author has different emails: {author}, {emails}')
                 emails.add(entry.mail)
             else:
                 author_emails[author] = {entry.mail}

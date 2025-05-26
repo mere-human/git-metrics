@@ -99,8 +99,16 @@ Hash:456 Email:john.doe@example.com Name:John Doe  Subj:Test Body:The change.
 Change-Id: i003
 <end-of-commit-message>
 """
-        with self.assertRaises(RuntimeError):
+        with self.assertLogs(level=logging.WARNING) as l:
             parse_log(log)
+            self.assertEqual(len(l.output), 3)
+            self.assertIn("Commits with the same ID differ (keeping 1st)", l.output[0])
+            self.assertIn("i003", l.output[1])
+            self.assertIn("Fix crash", l.output[1])
+
+            self.assertIn("i003", l.output[2])
+            self.assertIn("Test", l.output[2])
+
 
     def test_same_change_id_similar_subj(self):
         log = """Hash:123 Email:john.doe@example.com Name:John Doe  Subj:Fix crash Body:The change.
