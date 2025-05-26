@@ -218,6 +218,7 @@ class TestCmdArgs:
         self.since = ""
         self.until = ""
         self.group_pattern = ""
+        self.output = "result.xlsx"
 
 
 class TestConfig(unittest.TestCase):
@@ -241,7 +242,7 @@ class TestConfig(unittest.TestCase):
         config_data = config_create(args)
         self.assertEqual(
             config_data,
-            {"delta_days": 31, "end_date": date(year=2025, month=2, day=1)},
+            {"delta_days": 31, "last_date": date(year=2025, month=2, day=1)},
         )
 
     def test_read_empty(self):
@@ -260,14 +261,14 @@ class TestConfig(unittest.TestCase):
         try:
             tmp = tempfile.NamedTemporaryFile(delete=False)
             tmp.write(
-                '{"end_date": "Mar 04 2025", "delta_days": 31, "group_pattern": ".*gmail.com"}'.encode()
+                '{"last_date": "Mar 04 2025", "delta_days": 31, "group_pattern": ".*gmail.com"}'.encode()
             )
             tmp.close()
             data = config_read(tmp.name)
             self.assertEqual(
                 data,
                 {
-                    "end_date": "Mar 04 2025",
+                    "last_date": "Mar 04 2025",
                     "delta_days": 31,
                     "group_pattern": ".*gmail.com",
                 },
@@ -279,7 +280,7 @@ class TestConfig(unittest.TestCase):
 
     def test_update_args(self):
         config_data = {
-            "end_date": "Mar 04 2025",
+            "last_date": "Mar 04 2025",
             "delta_days": 31,
             "group_pattern": ".*gmail.com",
         }
@@ -288,6 +289,16 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(args.since, "Mar 04 2025")
         self.assertEqual(args.until, "Apr 04 2025")
         self.assertEqual(args.group_pattern, ".*gmail.com")
+
+    def test_output_pattern(self):
+        config_data = {
+            "last_date": "Feb 01 2025",
+            "delta_days": 31,
+            "output_pattern": "foo.%m.%d.tmp",
+        }
+        args = TestCmdArgs()
+        config_update_args(config_data, args)
+        self.assertEqual(args.output, "foo.03.04.tmp")
 
 
 if __name__ == "__main__":

@@ -282,7 +282,7 @@ def config_create(args):
         return {}
     end_date = datetime.strptime(args.until, _CONFIG_DATE_FORMAT).date()
     config_data = {}
-    config_data["end_date"] = end_date
+    config_data["last_date"] = end_date
     config_data["delta_days"] = (end_date - start_date).days
 
     if args.glob:
@@ -323,11 +323,15 @@ def config_update_args(config_data, args):
         if k in config_data:
             setattr(args, k, config_data[k])
 
-    args.since = config_data["end_date"]
+    args.since = config_data["last_date"]
     delta_days = timedelta(days=config_data["delta_days"])
     end_date = datetime.strptime(args.since, _CONFIG_DATE_FORMAT).date() + delta_days
-    config_data["end_date"] = end_date
+    config_data["last_date"] = end_date
     args.until = end_date.strftime(_CONFIG_DATE_FORMAT)
+
+    if "output_pattern" in config_data:
+        args.output = end_date.strftime(config_data["output_pattern"])
+
     logging.debug(args)
 
 

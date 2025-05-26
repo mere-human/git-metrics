@@ -36,7 +36,7 @@ If you generate reports often with most of the arguments unchanged, you can simp
 
 ```json
 {
-  "end_date": "Feb 01 2025",
+  "last_date": "Feb 01 2025",
   "delta_days": 31,
   "group_pattern": ".*gmail.com"
 }
@@ -45,7 +45,7 @@ If you generate reports often with most of the arguments unchanged, you can simp
 2. Use the existing config file next time.
 `python3 run.py --config_use`
 
-* Most of the args can be omitted. You can still specify the output name. "end_date" is updated each time.
+* Most of the args can be omitted. You can still specify the output name. "last_date" is updated each time.
 
 
 ## Merging periods
@@ -56,7 +56,6 @@ For more, see `merge.py --help` or its sources.
 
 ## TODO
 
-* Output auto-naming.
 * Easier to run by default:
   * Detect periods automatically
   * Sane default arguments.
