@@ -56,6 +56,8 @@ def parse_args(args = None):
                         help=f'writes a "{_CONFIG_FILE_NAME}" config file based on input arguments')
     parser.add_argument('--config_use', action='store_true',
                         help=f'reads the "{_CONFIG_FILE_NAME}" config file to use as arguments')
+    parser.add_argument('--config',
+                        help=f'specifies path to the config file')
 
     return parser.parse_args(args)
 
@@ -342,10 +344,11 @@ def main():
         return unittest.main(argv=[sys.argv[0]], module='test_run')
 
     config_data = {}
+    config_name = args.config if args.config else _CONFIG_FILE_NAME
     if args.config_write:
         config_data = config_create(args)
-    elif args.config_use:
-        config_data = config_read()
+    elif args.config_use or args.config:
+        config_data = config_read(config_name)
         config_update_args(config_data, args)
 
     data = run_log(args.since, args.until, args.author, args.glob)
@@ -353,8 +356,8 @@ def main():
     generate_output(parsed, args, email_pattern=args.group_pattern,
                     output_name=args.output, since=args.since, until=args.until)
 
-    if args.config_write or args.config_use:
-        config_write(config_data)
+    if args.config_write or args.config_use or args.config:
+        config_write(config_data, file_name=config_name)
 
 
 if __name__ == '__main__':
