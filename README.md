@@ -24,6 +24,30 @@ Warning: If there are a lot of branches, the process will take some time.
 2. Specify a pattern for branches.
 Add arguments such as `--glob="*Features*" --glob=master`.
 
+## Config file
+
+If you generate reports often with most of the arguments unchanged, you can simplify it by using the config file.
+
+1. Create a config file by adding the `--config_write` file. 
+
+`python run.py --group_pattern ".*gmail.com" --since "Jan 1 2025" --until "Feb 1 2025" --config_write`
+
+* It will create a "git-metrics.json" file in the current directory. The file will contain all relevant reusable arguments. Note that `--until` is used as a last updated date so it should be a date, not a period.
+
+```json
+{
+  "end_date": "Feb 01 2025",
+  "delta_days": 31,
+  "group_pattern": ".*gmail.com"
+}
+```
+
+2. Use the existing config file next time.
+`python3 run.py --config_use`
+
+* Most of the args can be omitted. You can still specify the output name. "end_date" is updated each time.
+
+
 ## Merging periods
 
 `run.py` provides info on a single specified period. If you want to create a table consisting of multiple periods, you can use the `merge.py` script.

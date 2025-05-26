@@ -1,20 +1,27 @@
 # WARNING: do not forget to update all branches before running.
 # You may use the "pull-branches.py" script.
 
-import subprocess
-import re
-import xlsxwriter
-import argparse
 from datetime import date
+from datetime import datetime
+from datetime import timedelta
+import argparse
+import json
 import logging
-import unittest
+import os
+import os.path
+import re
+import subprocess
 import sys
+import unittest
+import xlsxwriter
 
 logging.basicConfig(level=logging.INFO)
 
 MAX_LOG_LEN = 190
 
 STRICT_CHECKS = False
+_CONFIG_FILE_NAME = "git-metrics.json"
+_CONFIG_DATE_FORMAT = '%b %d %Y'
 
 class SummaryEntry:
     def __init__(self, commit_sum: int, author_name: str, author_email: str):
@@ -27,7 +34,7 @@ class SummaryEntry:
         return f'{self.commit_sum} {self.author_name} {self.author_email}'
 
 
-def parse_args():
+def parse_args(args = None):
     parser = argparse.ArgumentParser(description='Git metrics')
     parser.add_argument('--output', default='result.xlsx',
                         help='output XLSX file name (default: %(default)s)')
@@ -45,8 +52,12 @@ def parse_args():
                         help='skip commits from a specified author email')
     parser.add_argument('--test', action='store_true',
                         help='run unit tests')
+    parser.add_argument('--config_write', action='store_true',
+                        help=f'writes a "{_CONFIG_FILE_NAME}" config file based on input arguments')
+    parser.add_argument('--config_use', action='store_true',
+                        help=f'reads the "{_CONFIG_FILE_NAME}" config file to use as arguments')
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 # https://git-scm.com/docs/git-log
 # https://git-scm.com/docs/pretty-formats
@@ -260,16 +271,86 @@ def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, unt
 
     workbook.close()
 
+
+def config_create(args):
+    if not args.since:
+        logging.warning("No starting date, needed by config")
+        return {}
+    start_date = datetime.strptime(args.since, _CONFIG_DATE_FORMAT).date()
+    if not args.until:
+        logging.warning("No ending date, needed by config")
+        return {}
+    end_date = datetime.strptime(args.until, _CONFIG_DATE_FORMAT).date()
+    config_data = {}
+    config_data["end_date"] = end_date
+    config_data["delta_days"] = (end_date - start_date).days
+
+    if args.glob:
+        config_data["glob"] = args.glob
+    if args.group_pattern:
+        config_data["group_pattern"] = args.group_pattern
+    if args.exclude_author:
+        config_data["exclude_author"] = args.exclude_author
+    return config_data
+
+
+def config_write(config_data, file_name=_CONFIG_FILE_NAME):
+    if not config_data:
+        logging.warning("Failed to generate config file")
+        return
+
+    def json_serial(obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.strftime(_CONFIG_DATE_FORMAT)
+        raise TypeError("Type %s not serializable" % type(obj))
+
+    with open(file_name, "w") as f:
+        json.dump(config_data, f, default=json_serial, indent=2)
+
+
+def config_read(file_name=_CONFIG_FILE_NAME):
+    if not os.path.isfile(file_name):
+        raise RuntimeError(f"Config file not found {file_name}")
+    with open(file_name) as f:
+        config_data = json.load(f)
+        return config_data
+    raise RuntimeError(f"Failed to read config file {file_name}")
+
+
+def config_update_args(config_data, args):
+    key_list = ["glob", "group_pattern", "exclude_author"]
+    for k in key_list:
+        if k in config_data:
+            setattr(args, k, config_data[k])
+
+    args.since = config_data["end_date"]
+    delta_days = timedelta(days=config_data["delta_days"])
+    end_date = datetime.strptime(args.since, _CONFIG_DATE_FORMAT).date() + delta_days
+    config_data["end_date"] = end_date
+    args.until = end_date.strftime(_CONFIG_DATE_FORMAT)
+    logging.debug(args)
+
+
 def main():
     args = parse_args()
     logging.debug(f'Args: {args}')
     if args.test:
         return unittest.main(argv=[sys.argv[0]], module='test_run')
 
+    config_data = {}
+    if args.config_write:
+        config_data = config_create(args)
+    elif args.config_use:
+        config_data = config_read()
+        config_update_args(config_data, args)
+
     data = run_log(args.since, args.until, args.author, args.glob)
     parsed = parse_log(data, args.exclude_author, merge_by_email=False)
     generate_output(parsed, args, email_pattern=args.group_pattern,
                     output_name=args.output, since=args.since, until=args.until)
+
+    if args.config_write or args.config_use:
+        config_write(config_data)
 
 
 if __name__ == '__main__':

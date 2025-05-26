@@ -133,3 +133,4 @@ dmypy.json
 
 # Other
 .test/
+git-metrics.json

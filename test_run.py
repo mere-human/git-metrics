@@ -1,6 +1,6 @@
-import unittest
 from run import *
-
+import tempfile
+import unittest
 
 class TestParsing(unittest.TestCase):
     def test_single_entry(self):
@@ -109,7 +109,6 @@ Change-Id: i003
             self.assertIn("i003", l.output[2])
             self.assertIn("Test", l.output[2])
 
-
     def test_same_change_id_similar_subj(self):
         log = """Hash:123 Email:john.doe@example.com Name:John Doe  Subj:Fix crash Body:The change.
 Change-Id: i003
@@ -212,6 +211,83 @@ Change-Id: i003
                 SummaryEntry(2, "John Doe", "john.doe@example.com;john.doe@gmail.com"),
             ],
         )
+
+
+class TestCmdArgs:
+    def __init__(self):
+        self.since = ""
+        self.until = ""
+        self.group_pattern = ""
+
+
+class TestConfig(unittest.TestCase):
+    def test_from_args_empty(self):
+        args = parse_args([])
+        config_data = config_create(args)
+        self.assertEqual(config_data, {})
+
+    def test_from_args_no_end_date(self):
+        args = parse_args(["--since", "Jan 1 2025", "--config_write"])
+        config_data = config_create(args)
+        self.assertEqual(
+            config_data,
+            {},
+        )
+
+    def test_from_args_valid(self):
+        args = parse_args(
+            ["--since", "Jan 1 2025", "--until", "Feb 1 2025", "--config_write"]
+        )
+        config_data = config_create(args)
+        self.assertEqual(
+            config_data,
+            {"delta_days": 31, "end_date": date(year=2025, month=2, day=1)},
+        )
+
+    def test_read_empty(self):
+        try:
+            tmp = tempfile.NamedTemporaryFile(delete=False)
+            tmp.write("{}".encode())
+            tmp.close()
+            data = config_read(tmp.name)
+            self.assertEqual(data, {})
+        except Exception as e:
+            self.fail(e)
+        finally:
+            os.unlink(tmp.name)
+
+    def test_read_valid(self):
+        try:
+            tmp = tempfile.NamedTemporaryFile(delete=False)
+            tmp.write(
+                '{"end_date": "Mar 04 2025", "delta_days": 31, "group_pattern": ".*gmail.com"}'.encode()
+            )
+            tmp.close()
+            data = config_read(tmp.name)
+            self.assertEqual(
+                data,
+                {
+                    "end_date": "Mar 04 2025",
+                    "delta_days": 31,
+                    "group_pattern": ".*gmail.com",
+                },
+            )
+        except Exception as e:
+            self.fail(e)
+        finally:
+            os.unlink(tmp.name)
+
+    def test_update_args(self):
+        config_data = {
+            "end_date": "Mar 04 2025",
+            "delta_days": 31,
+            "group_pattern": ".*gmail.com",
+        }
+        args = TestCmdArgs()
+        config_update_args(config_data, args)
+        self.assertEqual(args.since, "Mar 04 2025")
+        self.assertEqual(args.until, "Apr 04 2025")
+        self.assertEqual(args.group_pattern, ".*gmail.com")
 
 
 if __name__ == "__main__":
