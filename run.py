@@ -113,11 +113,11 @@ def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry
     results = re.findall(r'Change-Id:\s*(\S+)', line)
     if results:
         if len(results) > 1:
-            logging.warning('Multiple Change-Id is unexpected. Using the last occurence.')
+            logging.warning(f'Multiple Change-Id in {entry.hash} is unexpected. Using the last occurence.')
         entry.change_id = results[-1]
     else:
         entry.change_id = entry.hash  # use a fallback
-        logging.warning(f'No change id at line {line_num}: {line[:MAX_LOG_LEN]}')
+        logging.warning(f'No change ID in {entry.hash} at line {line_num} ({line[:MAX_LOG_LEN]}), using hash.')
 
     return entry
 
@@ -352,7 +352,7 @@ def main():
         config_update_args(config_data, args)
 
     data = run_log(args.since, args.until, args.author, args.glob)
-    parsed = parse_log(data, args.exclude_author, merge_by_email=False)
+    parsed = parse_log(data, args.exclude_author, merge_by_email=True)
     generate_output(parsed, args, email_pattern=args.group_pattern,
                     output_name=args.output, since=args.since, until=args.until)
 
