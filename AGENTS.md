@@ -23,7 +23,8 @@ Prefer the isolated environment when `.venv` exists:
 python3 setup.py                                          # one-time setup
 python3 run-env.py run.py --since "2 weeks"             # run in venv
 python3 run-env.py merge.py --dir ./reports
-python3 -m unittest test_run -v                          # run tests
+python3 run-env.py run.py --test                          # run tests in venv
+python3 -m unittest test_run -v                          # without venv wrapper
 python3 run.py --test                                     # alternative test entry
 ```
 
@@ -48,6 +49,6 @@ Without venv: `python3 run.py --since "2 weeks"` (requires `pip3 install -r requ
 
 1. Read this file and `.cursor/rules/` before making changes
 2. Use `run-env.py` for running scripts when `.venv` is present
-3. Run `python3 -m unittest test_run -v` after editing Python source
+3. Run `python3 run-env.py run.py --test` after editing Python source (or `python3 -m unittest test_run -v` without the venv wrapper)
 4. Keep changes minimal and match existing flat-script style
 5. Do not run destructive git commands (`push --force`, `reset --hard`, etc.)

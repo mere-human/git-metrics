@@ -10,8 +10,8 @@
 ## Testing
 - Framework: `unittest` (standard library)
 - Test file: `test_run.py`
-- Run tests: `python3 -m unittest test_run -v`
-- Alternative: `python3 run.py --test`
+- Run tests: `python3 run-env.py run.py --test` (preferred when `.venv` exists)
+- Without venv wrapper: `python3 -m unittest test_run -v` or `python3 run.py --test`
 
 ## Common Commands
 
@@ -19,7 +19,7 @@
 |------|---------|
 | Install dependencies | `pip3 install -r requirements.txt` |
 | Run the tool | `python3 run.py --since "2 weeks"` |
-| Run tests | `python3 -m unittest test_run -v` |
+| Run tests | `python3 run-env.py run.py --test` |
 | Merge reports | `python3 merge.py --dir ./reports` |
 | Pull branches | `python3 pull-branches.py < branches.txt` |
 

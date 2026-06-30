@@ -18,7 +18,8 @@ Python CLI that gathers commit metrics from Git repos and writes XLSX reports.
 ```bash
 python3 setup.py                                    # create .venv (once)
 python3 run-env.py run.py --since "2 weeks"         # preferred runner
-python3 -m unittest test_run -v                     # verify changes
+python3 run-env.py run.py --test                    # verify changes in venv
+python3 -m unittest test_run -v                     # without venv wrapper
 ```
 
 ## Design constraints

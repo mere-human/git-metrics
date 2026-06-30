@@ -9,7 +9,7 @@ alwaysApply: false
 ## Framework
 
 - `unittest` only — no pytest
-- Run: `python3 -m unittest test_run -v` or `python3 run.py --test`
+- Run: `python3 run-env.py run.py --test` (preferred when `.venv` exists), or `python3 -m unittest test_run -v` / `python3 run.py --test`
 
 ## Fixtures
 

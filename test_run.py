@@ -59,7 +59,8 @@ Change-Id: i004
                     1, "John Doe", "john.doe@example.com")]
             )
             self.assertEqual(len(l.output), 1)
-            self.assertIn("No change id at line", l.output[0])
+            self.assertIn("No change ID in 123 at line 0", l.output[0])
+            self.assertIn("using hash.", l.output[0])
 
     def test_same_change_id(self):
         log = """Hash:123 Email:john.doe@example.com Name:John Doe  Subj:Fix crash Body:The change.

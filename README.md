@@ -74,7 +74,11 @@ Use the runner script to execute any git-metrics command inside the isolated env
 
 `python3 run-env.py run.py --since "2 weeks"`
 
-### Manual activation
+### Running tests
+
+`python3 run-env.py run.py --test`
+
+Without the venv wrapper: `python3 -m unittest test_run -v` or `python3 run.py --test`.
 
 If you prefer to activate the environment yourself:
 
