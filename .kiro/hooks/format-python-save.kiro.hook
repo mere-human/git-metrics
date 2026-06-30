@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Format Python on Save",
+  "description": "Automatically formats Python files using autopep8 whenever a .py file is saved.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.py"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "autopep8 --in-place --recursive .",
+    "timeout": 120
+  },
+  "workspaceFolderName": "git-metrics",
+  "shortName": "format-python-save"
+}
