@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 
 # Other
+.DS_Store
 .test/
 git-metrics.json
