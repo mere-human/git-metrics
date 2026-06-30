@@ -54,6 +54,35 @@ If you generate reports often with most of the arguments unchanged, you can simp
 Just specify a list of XLSX files (or a directory with files) and it will produce a table where columns correspond to data from each file.
 For more, see `merge.py --help` or its sources.
 
+## Dependency Isolation
+
+The project supports running in an isolated virtual environment so that its dependencies do not interfere with your system Python packages.
+
+**Prerequisite:** Python 3 must be installed on your system.
+
+### Setup
+
+Run the setup script to create the isolated environment:
+
+`python3 setup.py`
+
+This creates a `.venv` directory at the project root with all dependencies from `requirements.txt` installed.
+
+### Running scripts
+
+Use the runner script to execute any git-metrics command inside the isolated environment without manual activation:
+
+`python3 run-env.py run.py --since "2 weeks"`
+
+### Manual activation
+
+If you prefer to activate the environment yourself:
+
+- **Unix (Linux/macOS):** `source .venv/bin/activate`
+- **Windows:** `.venv\Scripts\activate`
+
+Once activated, run scripts directly (e.g. `python run.py --since "2 weeks"`). Deactivate with `deactivate`.
+
 ## TODO
 
 * Easier to run by default:

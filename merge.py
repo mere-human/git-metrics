@@ -9,6 +9,7 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Git metrics')
     parser.add_argument('FILES', nargs='*', help='specify file names to merge')
@@ -17,7 +18,7 @@ def parse_args():
     parser.add_argument('--dir',
                         help='merge all files in a specified directory')
 
-    return parser.parse_args() 
+    return parser.parse_args()
 
 
 def validate_header(first_row):
@@ -81,11 +82,13 @@ def write_output(output_name, data, columns):
 
     # Parse and sort columns (dates).
     columns2 = sorted(columns, key=lambda x: datetime.strptime(x, '%d.%m.%Y'))
-    
+
     # Add header.
     row_curr = 0
-    worksheet.write_row(row=row_curr, col=0, data=['Author'] + columns2, cell_format=bold)
-    worksheet.set_column(first_col=1, last_col=len(columns2), width=len('31.12.1999'))
+    worksheet.write_row(row=row_curr, col=0, data=[
+                        'Author'] + columns2, cell_format=bold)
+    worksheet.set_column(first_col=1, last_col=len(
+        columns2), width=len('31.12.1999'))
     row_curr += 1
 
     # Write rows. Sort authors.

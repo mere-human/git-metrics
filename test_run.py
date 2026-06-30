@@ -2,6 +2,7 @@ from run import *
 import tempfile
 import unittest
 
+
 class TestParsing(unittest.TestCase):
     def test_single_entry(self):
         # single entry with lots of details
@@ -21,7 +22,8 @@ Tested-by: Build Verifier <build@example.com>
 <end-of-commit-message>
 """
         self.assertEqual(
-            parse_log(log), [SummaryEntry(1, "John Doe", "john.doe@example.com")]
+            parse_log(log), [SummaryEntry(
+                1, "John Doe", "john.doe@example.com")]
         )
 
     def test_several_entries(self):
@@ -53,7 +55,8 @@ Change-Id: i004
 """
         with self.assertLogs(level=logging.WARNING) as l:
             self.assertEqual(
-                parse_log(log), [SummaryEntry(1, "John Doe", "john.doe@example.com")]
+                parse_log(log), [SummaryEntry(
+                    1, "John Doe", "john.doe@example.com")]
             )
             self.assertEqual(len(l.output), 1)
             self.assertIn("No change id at line", l.output[0])
@@ -67,7 +70,8 @@ Change-Id: i003
 <end-of-commit-message>
 """
         self.assertEqual(
-            parse_log(log), [SummaryEntry(1, "John Doe", "john.doe@example.com")]
+            parse_log(log), [SummaryEntry(
+                1, "John Doe", "john.doe@example.com")]
         )
 
     def test_same_subj_diff_change_id(self):
@@ -80,7 +84,8 @@ Change-Id: i002
 """
         with self.assertLogs(level=logging.WARNING) as l:
             self.assertEqual(
-                parse_log(log), [SummaryEntry(1, "John Doe", "john.doe@example.com")]
+                parse_log(log), [SummaryEntry(
+                    1, "John Doe", "john.doe@example.com")]
             )
             self.assertEqual(len(l.output), 3)
             self.assertIn("Commits with the same subject differ", l.output[0])
@@ -102,7 +107,8 @@ Change-Id: i003
         with self.assertLogs(level=logging.WARNING) as l:
             parse_log(log)
             self.assertEqual(len(l.output), 3)
-            self.assertIn("Commits with the same ID differ (keeping 1st)", l.output[0])
+            self.assertIn(
+                "Commits with the same ID differ (keeping 1st)", l.output[0])
             self.assertIn("i003", l.output[1])
             self.assertIn("Fix crash", l.output[1])
 
@@ -208,7 +214,8 @@ Change-Id: i003
             parse_log(log, merge_by_email=False),
             [
                 SummaryEntry(1, "Dr Who", "drwho@example.com"),
-                SummaryEntry(2, "John Doe", "john.doe@example.com;john.doe@gmail.com"),
+                SummaryEntry(
+                    2, "John Doe", "john.doe@example.com;john.doe@gmail.com"),
             ],
         )
 

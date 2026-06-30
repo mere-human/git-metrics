@@ -23,18 +23,21 @@ STRICT_CHECKS = False
 _CONFIG_FILE_NAME = "git-metrics.json"
 _CONFIG_DATE_FORMAT = '%b %d %Y'
 
+
 class SummaryEntry:
     def __init__(self, commit_sum: int, author_name: str, author_email: str):
         self.commit_sum = commit_sum
         self.author_name = author_name
         self.author_email = author_email
+
     def __eq__(self, other):
         return repr(self) == repr(other)
+
     def __repr__(self):
         return f'{self.commit_sum} {self.author_name} {self.author_email}'
 
 
-def parse_args(args = None):
+def parse_args(args=None):
     parser = argparse.ArgumentParser(description='Git metrics')
     parser.add_argument('--output', default='result.xlsx',
                         help='output XLSX file name (default: %(default)s)')
@@ -63,6 +66,8 @@ def parse_args(args = None):
 
 # https://git-scm.com/docs/git-log
 # https://git-scm.com/docs/pretty-formats
+
+
 def run_log(since, until, author, globs):
     # %h - abbreviated commit hash
     # %ae - author email
@@ -70,7 +75,8 @@ def run_log(since, until, author, globs):
     # %s - subject
     # %(trailers[:<options>]) - display the trailers of the body
     # we could have used "%(trailers:key=Change-Id)" here but if it is not separated by a newline from the message, then it won't be parsed :(
-    cmd = ['git', 'log',  '--no-merges', '--format=Hash:%h Email:%ae Name:%an Subj:%s Body:%b<end-of-commit-message>']
+    cmd = ['git', 'log',  '--no-merges',
+           '--format=Hash:%h Email:%ae Name:%an Subj:%s Body:%b<end-of-commit-message>']
     if since:
         cmd += [f'--since="{since}"']
     if until:
@@ -82,6 +88,7 @@ def run_log(since, until, author, globs):
             cmd += [f'--glob={g}']
     return subprocess.run(cmd, capture_output=True)
 
+
 class LogEntry:
     def __init__(self, hash, change_id, mail, name, subj):
         self.hash = hash
@@ -89,19 +96,24 @@ class LogEntry:
         self.mail = mail
         self.name = name
         self.subj = subj
+
     def __str__(self):
-        items = ", ".join(f"{k}={repr(self.__dict__[k])}" for k in sorted(self.__dict__))
+        items = ", ".join(
+            f"{k}={repr(self.__dict__[k])}" for k in sorted(self.__dict__))
         return f"{type(self).__name__}({items})"
+
 
 def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry:
     if not line.strip():
         return None
 
     logging.debug(f'parse_entry:{line}'[:MAX_LOG_LEN])
-    m = re.search(r'^Hash:(\S+)\s+Email:(\S+)\s+Name:(.+)\s+Subj:(.+)\s+Body:', line)
+    m = re.search(
+        r'^Hash:(\S+)\s+Email:(\S+)\s+Name:(.+)\s+Subj:(.+)\s+Body:', line)
     if not m:
         raise RuntimeError(f'Could not parse at line {line_num}: {line}')
-    entry = LogEntry(hash = m.group(1), change_id = '', mail = m.group(2).lower(), name=m.group(3).strip(), subj = m.group(4).strip())
+    entry = LogEntry(hash=m.group(1), change_id='', mail=m.group(
+        2).lower(), name=m.group(3).strip(), subj=m.group(4).strip())
 
     if entry.mail == filter_author:
         return None
@@ -113,11 +125,13 @@ def parse_entry(line: str, line_num: int, filter_author: str = None) -> LogEntry
     results = re.findall(r'Change-Id:\s*(\S+)', line)
     if results:
         if len(results) > 1:
-            logging.warning(f'Multiple Change-Id in {entry.hash} is unexpected. Using the last occurence.')
+            logging.warning(
+                f'Multiple Change-Id in {entry.hash} is unexpected. Using the last occurence.')
         entry.change_id = results[-1]
     else:
         entry.change_id = entry.hash  # use a fallback
-        logging.warning(f'No change ID in {entry.hash} at line {line_num} ({line[:MAX_LOG_LEN]}), using hash.')
+        logging.warning(
+            f'No change ID in {entry.hash} at line {line_num} ({line[:MAX_LOG_LEN]}), using hash.')
 
     return entry
 
@@ -147,11 +161,13 @@ def parse_log(data, filter_author=None, merge_by_email=True):
             if existing.mail != entry.mail or existing.subj != entry.subj:
                 if (existing.subj in entry.subj or entry.subj in existing.subj) or not STRICT_CHECKS:
                     # if one subject is a subset of another, it's not critical (e.g. cherry-pick)
-                    logging.warning(f'Commits with the same ID differ (keeping 1st)')
+                    logging.warning(
+                        f'Commits with the same ID differ (keeping 1st)')
                     logging.warning(f'1. {existing}'[:MAX_LOG_LEN])
                     logging.warning(f'2. {entry}'[:MAX_LOG_LEN])
                 else:
-                    raise RuntimeError(f'Commits with the same ID differ: {existing} != {entry}')
+                    raise RuntimeError(
+                        f'Commits with the same ID differ: {existing} != {entry}')
         else:
             data_by_id[entry.change_id] = entry
 
@@ -161,7 +177,8 @@ def parse_log(data, filter_author=None, merge_by_email=True):
             emails = author_emails.get(author)
             if emails:
                 if len(emails) > 1:
-                    logging.warning(f'Same author has different emails: {author}, {emails}')
+                    logging.warning(
+                        f'Same author has different emails: {author}, {emails}')
                 emails.add(entry.mail)
             else:
                 author_emails[author] = {entry.mail}
@@ -172,7 +189,8 @@ def parse_log(data, filter_author=None, merge_by_email=True):
             existing = data_by_subj.get(entry.subj)
             if existing:
                 if existing.change_id != entry.change_id:
-                    logging.warning(f'Commits with the same subject differ (keeping 1st)')
+                    logging.warning(
+                        f'Commits with the same subject differ (keeping 1st)')
                     logging.warning(f'1. {existing}'[:MAX_LOG_LEN])
                     logging.warning(f'2. {entry}'[:MAX_LOG_LEN])
             else:
@@ -191,7 +209,7 @@ def parse_log(data, filter_author=None, merge_by_email=True):
     for author in data_by_author:
         data_by_subj = data_by_author[author]
         if data_by_subj:
-            data = next(iter(data_by_subj.values())) # pick any entry
+            data = next(iter(data_by_subj.values()))  # pick any entry
             if merge_by_email:
                 mail_data = author
             else:
@@ -210,7 +228,7 @@ def parse_log(data, filter_author=None, merge_by_email=True):
     return summaries
 
 
-def generate_output(parsed:'list[SummaryEntry]', args, email_pattern, since, until, output_name):
+def generate_output(parsed: 'list[SummaryEntry]', args, email_pattern, since, until, output_name):
     group_rows = []
     workbook = xlsxwriter.Workbook(output_name)
     bold = workbook.add_format({"bold": True})
@@ -327,7 +345,8 @@ def config_update_args(config_data, args):
 
     args.since = config_data["last_date"]
     delta_days = timedelta(days=config_data["delta_days"])
-    end_date = datetime.strptime(args.since, _CONFIG_DATE_FORMAT).date() + delta_days
+    end_date = datetime.strptime(
+        args.since, _CONFIG_DATE_FORMAT).date() + delta_days
     config_data["last_date"] = end_date
     args.until = end_date.strftime(_CONFIG_DATE_FORMAT)
 
