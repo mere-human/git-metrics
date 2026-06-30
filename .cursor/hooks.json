@@ -3,13 +3,13 @@
   "hooks": {
     "afterFileEdit": [
       {
-        "command": ".cursor/hooks/after-python-edit.sh",
+        "command": ".cursor/hooks/after_python_edit.py",
         "matcher": "Write|TabWrite"
       }
     ],
     "beforeShellExecution": [
       {
-        "command": ".cursor/hooks/block-destructive-git.sh",
+        "command": ".cursor/hooks/block_destructive_git.py",
         "matcher": "git ",
         "failClosed": false
       }
