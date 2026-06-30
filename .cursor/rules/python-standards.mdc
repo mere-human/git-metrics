@@ -1,0 +1,40 @@
+---
+description: Python coding standards for git-metrics
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python standards
+
+## Style
+
+- Follow existing module layout: stdlib imports first, then third-party
+- Use `argparse` for CLI; each script exposes `parse_args()` and `main()`
+- Type hints on new function signatures where they aid clarity; not required everywhere
+- Format with autopep8 before committing
+
+## Patterns in this codebase
+
+```python
+# ✅ Config constants at module level
+_CONFIG_FILE_NAME = "git-metrics.json"
+
+# ✅ Subprocess for git — capture output, don't shell=True
+subprocess.run(['git', 'log', ...], capture_output=True)
+
+# ✅ Warnings for ambiguous log data
+logging.warning(f'No change ID in {entry.hash}, using hash.')
+```
+
+## Avoid
+
+- Adding frameworks, ORMs, or packaging infrastructure
+- `shell=True` in subprocess calls
+- Breaking the flat script structure into packages without explicit request
+- Hard-coded paths outside the project root
+
+## Dependencies
+
+- Runtime: `XlsxWriter`, `openpyxl` only
+- Dev/format: `autopep8`
+- Prefer stdlib (`venv`, `json`, `re`, `unittest`) over new packages

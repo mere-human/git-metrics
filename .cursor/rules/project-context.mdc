@@ -1,0 +1,36 @@
+---
+description: Core project context for git-metrics
+alwaysApply: true
+---
+
+# git-metrics
+
+Python CLI that gathers commit metrics from Git repos and writes XLSX reports.
+
+## Structure
+
+- Flat layout: standalone scripts at repo root, no package directory
+- Core logic lives in `run.py`; `merge.py` and `pull-branches.py` are independent utilities
+- Tests in `test_run.py` import from `run.py` directly
+
+## Running
+
+```bash
+python3 setup.py                                    # create .venv (once)
+python3 run-env.py run.py --since "2 weeks"         # preferred runner
+python3 -m unittest test_run -v                     # verify changes
+```
+
+## Design constraints
+
+- No pyproject.toml or package structure — intentional
+- Dependencies: XlsxWriter (write XLSX), openpyxl (read XLSX in merge.py)
+- Deduplication key: Change-Id trailer; falls back to commit hash with a warning
+- Runtime config `git-metrics.json` is gitignored — do not commit it
+
+## Change guidelines
+
+- Match existing argparse + `main()` patterns in sibling scripts
+- Preserve backward compatibility of CLI flags and config file schema
+- Add unittest coverage for parsing and config logic changes
+- Use `logging.warning` for recoverable data issues, not silent fixes

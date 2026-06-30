@@ -1,0 +1,44 @@
+---
+description: Unit testing conventions for git-metrics
+globs: "test_*.py"
+alwaysApply: false
+---
+
+# Testing
+
+## Framework
+
+- `unittest` only — no pytest
+- Run: `python3 -m unittest test_run -v` or `python3 run.py --test`
+
+## Fixtures
+
+Use realistic git log strings with the project's custom format:
+
+```
+Hash:abc Email:user@example.com Name:User Subj:Subject Body:...
+Change-Id: I...
+<end-of-commit-message>
+```
+
+## What to test
+
+- `parse_log()` — deduplication, Change-Id handling, author grouping
+- Config read/write — date advancement, argument merging
+- Edge cases: missing Change-Id (warn + hash fallback), duplicate subjects
+
+## Patterns
+
+```python
+# ✅ Import from module under test
+from run import parse_log, SummaryEntry
+
+# ✅ Assert on domain objects
+self.assertEqual(parse_log(log), [SummaryEntry(1, "John Doe", "john@example.com")])
+
+# ✅ Capture expected warnings
+with self.assertLogs(level=logging.WARNING):
+    parse_log(log_without_change_id)
+```
+
+Do not mock `git` subprocess calls when testing pure parsing functions.
