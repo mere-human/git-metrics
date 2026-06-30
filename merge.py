@@ -9,6 +9,8 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 
+_DEFAULT_MAX_XLSX_BYTES = 50 * 1024 * 1024  # 50 MiB
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Git metrics')
@@ -17,6 +19,14 @@ def parse_args():
                         help='output XLSX file name (default: %(default)s)')
     parser.add_argument('--dir',
                         help='merge all files in a specified directory')
+    parser.add_argument(
+        '--max-file-size',
+        type=int,
+        default=_DEFAULT_MAX_XLSX_BYTES,
+        metavar='BYTES',
+        help='reject input XLSX files larger than N bytes (0 = no limit, '
+             f'default: {_DEFAULT_MAX_XLSX_BYTES})',
+    )
 
     return parser.parse_args()
 
@@ -41,28 +51,42 @@ def extract_date(file_path):
     raise RuntimeError(f'Could not extract date from {file_path}')
 
 
-def parse(filename):
-    book = openpyxl.load_workbook(filename)
-
-    if len(book.worksheets) != 1:
-        logging.warning(f'Expect 1 worksheet in {filename}')
+def _check_file_size(filename, max_file_size):
+    if not max_file_size:
         return
+    size = os.path.getsize(filename)
+    if size > max_file_size:
+        raise RuntimeError(
+            f'File too large: {filename} ({size} bytes, limit {max_file_size})')
 
-    sheet = book.worksheets[0]
 
-    row_data = []
-    for i, row in enumerate(sheet.rows):
-        if i == 0:
-            validate_header(row)
-            continue
-        cell_data = []
-        for cell in row:
-            cell_data.append(cell.value)
-        # stop at empty rows for now which separate summary rows
-        if all(x is None for x in cell_data):
-            break
-        row_data.append(cell_data)
-    return row_data
+def parse(filename, max_file_size=0):
+    _check_file_size(filename, max_file_size)
+
+    book = openpyxl.load_workbook(
+        filename, read_only=True, data_only=True)
+    try:
+        if len(book.worksheets) != 1:
+            logging.warning(f'Expect 1 worksheet in {filename}')
+            return
+
+        sheet = book.worksheets[0]
+
+        row_data = []
+        for i, row in enumerate(sheet.rows):
+            if i == 0:
+                validate_header(row)
+                continue
+            cell_data = []
+            for cell in row:
+                cell_data.append(cell.value)
+            # stop at empty rows for now which separate summary rows
+            if all(x is None for x in cell_data):
+                break
+            row_data.append(cell_data)
+        return row_data
+    finally:
+        book.close()
 
 
 def insert_row_data(data_by_authors, row_data, column_name):
@@ -115,11 +139,11 @@ def write_output(output_name, data, columns):
     workbook.close()
 
 
-def process_files(filenames, output_name):
+def process_files(filenames, output_name, max_file_size=0):
     column_names = []
     data_by_authors = {}
     for filename in filenames:
-        row_data = parse(filename)
+        row_data = parse(filename, max_file_size=max_file_size)
         column_names.append(extract_date(filename))
         insert_row_data(data_by_authors, row_data, column_names[-1])
     write_output(output_name, data_by_authors, column_names)
@@ -129,14 +153,14 @@ def main():
     args = parse_args()
     logging.debug(f'Args: {args}')
     if args.FILES:
-        process_files(args.FILES, args.output)
+        process_files(args.FILES, args.output, max_file_size=args.max_file_size)
     elif args.dir:
         files = []
         for entry in os.listdir(args.dir):
             entry_path = os.path.join(args.dir, entry)
             if os.path.isfile(entry_path) and os.path.splitext(entry)[1].lower() == '.xlsx':
                 files.append(entry_path)
-        process_files(files, args.output)
+        process_files(files, args.output, max_file_size=args.max_file_size)
 
 
 if __name__ == '__main__':
